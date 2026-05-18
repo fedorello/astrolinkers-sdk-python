@@ -1,0 +1,134 @@
+[project]
+name = "astrolinkers"
+version = "0.1.0"
+description = "Official Python SDK for the Astrolinkers API — natal charts, talent profiles, Vedic calculations and engine-grounded LLM interpretations."
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+authors = [{ name = "Astrolinkers" }]
+keywords = ["astrology", "vedic", "jyotish", "natal-chart", "llm", "api-client"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Typing :: Typed",
+]
+
+# Runtime dependencies pinned to caret ranges so consumers can pick up
+# patch / minor improvements while the SDK guarantees the major.
+dependencies = [
+    "httpx>=0.28.1,<0.29",
+    "httpx-sse>=0.4.3,<0.5",
+    "pydantic>=2.13.4,<3",
+]
+
+[project.urls]
+Homepage = "https://astrolinkers.com"
+Documentation = "https://docs.astrolinkers.com"
+Repository = "https://github.com/fedorello/astrolinkers-sdk-python"
+Issues = "https://github.com/fedorello/astrolinkers-sdk-python/issues"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.3,<10",
+    "pytest-asyncio>=1.3.0,<2",
+    "respx>=0.22.0,<0.23",
+    "ruff>=0.15.13,<0.16",
+    "mypy>=2.1.0,<3",
+    "coverage[toml]>=7.6,<8",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/astrolinkers"]
+
+[tool.hatch.build.targets.sdist]
+include = ["src/astrolinkers", "README.md", "CHANGELOG.md", "LICENSE"]
+
+
+# ─── Tooling ────────────────────────────────────────────────────────
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+# Strict ruleset. The SDK is library code — strictness keeps the public
+# surface clean and consistent for users who type into our objects.
+select = [
+    "E", "F", "W",      # pycodestyle, pyflakes
+    "I",                # isort
+    "B",                # bugbear
+    "UP",               # pyupgrade
+    "N",                # naming
+    "D",                # pydocstyle
+    "ANN",              # flake8-annotations
+    "S",                # flake8-bandit (security)
+    "C4",               # comprehensions
+    "PIE", "RET", "SIM",
+    "ARG", "PTH",
+    "PL",               # pylint
+    "RUF",
+    "DTZ",              # datetime timezone-aware
+    "ASYNC",
+]
+ignore = [
+    "D203",    # one-blank-line-before-class — conflicts with D211
+    "D213",    # multi-line-summary-second-line — conflicts with D212
+    "D105",    # docstring in magic methods — context managers + __init__ on
+               # data classes are self-evident; covered by the class doc.
+    "D107",    # docstring in __init__ — class docstring already names args.
+    "PLR0913", # too-many-args — kw-only constructors are clear
+    "S101",    # assert allowed in tests
+    "ANN401",  # ``Any`` is unavoidable at JSON / **kwargs boundaries; the
+               # public surface stays typed, only internal plumbing uses it.
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["D", "ANN201", "ANN001", "S101", "PLR2004"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.mypy]
+strict = true
+python_version = "3.12"
+files = ["src", "tests"]
+plugins = ["pydantic.mypy"]
+show_error_codes = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+warn_unreachable = true
+
+[[tool.mypy.overrides]]
+module = ["respx.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+addopts = "-ra --strict-markers"
+testpaths = ["tests"]
+
+[tool.coverage.run]
+branch = true
+source = ["src/astrolinkers"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = false
+fail_under = 90
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+    "\\.\\.\\.",
+]
