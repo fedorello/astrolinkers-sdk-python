@@ -1,4 +1,4 @@
-"""Stored interpretations + usage-summary resources."""
+"""LLM persistence — list_stored / retrieve_stored / usage_summary on client.llm."""
 
 from __future__ import annotations
 
@@ -42,7 +42,7 @@ def test_list_serialises_all_filters(
             json={"items": [STORED_PAYLOAD], "total": 1, "limit": 50, "offset": 0},
         ),
     )
-    page = sync_client.interpretations.list(
+    page = sync_client.llm.list_stored(
         chart_id="c1",
         interpretation_type="theme",
         language=Language.EN,
@@ -67,7 +67,7 @@ def test_retrieve_one_returns_typed_model(
     respx_mock.get("/v1/llm/interpretations/019e3d4f-").mock(
         return_value=httpx.Response(200, json=STORED_PAYLOAD),
     )
-    row = sync_client.interpretations.retrieve("019e3d4f-")
+    row = sync_client.llm.retrieve_stored("019e3d4f-")
     assert row.interpretation_type.value == "theme"
     assert row.theme == "career"
     assert row.cost_usd == 0.0021
@@ -108,7 +108,7 @@ def test_usage_summary_serialises_from_and_group_by(
     route = respx_mock.get("/v1/llm/usage-summary").mock(
         return_value=httpx.Response(200, json=payload),
     )
-    summary = sync_client.interpretations.usage_summary(
+    summary = sync_client.llm.usage_summary(
         from_=datetime(2026, 5, 18, tzinfo=UTC),
         to=datetime(2026, 5, 19, tzinfo=UTC),
         group_by=UsageGroupBy.TIER,

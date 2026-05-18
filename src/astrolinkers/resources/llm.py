@@ -17,15 +17,61 @@ import httpx_sse
 
 from astrolinkers._errors import APIError, AstrolinkersError
 from astrolinkers._transport import AsyncTransport, SyncTransport
-from astrolinkers.types.enums import InterpretationTier, Language
+from astrolinkers.types.enums import InterpretationTier, Language, UsageGroupBy
 from astrolinkers.types.interpretations import (
     DeltaEvent,
     DoneEvent,
     ErrorEvent,
+    InterpretationListPage,
     InterpretationStreamEvent,
     LLMInterpretation,
     MetaEvent,
+    StoredLLMInterpretation,
 )
+from astrolinkers.types.usage import UsageSummary
+
+
+def _list_stored_params(
+    *,
+    chart_id: str | None,
+    interpretation_type: str | None,
+    language: Language | None,
+    tier: InterpretationTier | None,
+    limit: int,
+    offset: int,
+) -> dict[str, object]:
+    """Query for ``GET /v1/llm/interpretations``."""
+    return {
+        "chart_id": chart_id,
+        "interpretation_type": interpretation_type,
+        "language": language,
+        "tier": tier,
+        "limit": limit,
+        "offset": offset,
+    }
+
+
+def _usage_params(
+    *,
+    from_: datetime,
+    to: datetime,
+    chart_id: str | None,
+    interpretation_type: str | None,
+    language: Language | None,
+    tier: InterpretationTier | None,
+    group_by: UsageGroupBy,
+) -> dict[str, object]:
+    """Query for ``GET /v1/llm/usage-summary``."""
+    return {
+        "from": from_.isoformat(),
+        "to": to.isoformat(),
+        "chart_id": chart_id,
+        "interpretation_type": interpretation_type,
+        "language": language,
+        "tier": tier,
+        "group_by": group_by,
+    }
+
 
 # ──────────────────────────────────────────────────────────────────
 # Query helpers
@@ -394,6 +440,71 @@ class AsyncLLM:
         except AstrolinkersError as exc:
             yield ErrorEvent(error=str(exc))
 
+    # ── Persistence: list / read past interpretations + usage ────
+
+    async def list_stored(
+        self,
+        *,
+        chart_id: str | None = None,
+        interpretation_type: str | None = None,
+        language: Language | None = None,
+        tier: InterpretationTier | None = None,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> InterpretationListPage:
+        """List previously generated LLM interpretations, newest first."""
+        data = await self._transport.request(
+            "GET",
+            "/v1/llm/interpretations",
+            params=_list_stored_params(
+                chart_id=chart_id,
+                interpretation_type=interpretation_type,
+                language=language,
+                tier=tier,
+                limit=limit,
+                offset=offset,
+            ),
+        )
+        return InterpretationListPage.model_validate(data)
+
+    async def retrieve_stored(
+        self,
+        interpretation_id: str,
+    ) -> StoredLLMInterpretation:
+        """Read one stored LLM interpretation by id."""
+        data = await self._transport.request(
+            "GET",
+            f"/v1/llm/interpretations/{interpretation_id}",
+        )
+        return StoredLLMInterpretation.model_validate(data)
+
+    async def usage_summary(
+        self,
+        *,
+        from_: datetime,
+        to: datetime,
+        chart_id: str | None = None,
+        interpretation_type: str | None = None,
+        language: Language | None = None,
+        tier: InterpretationTier | None = None,
+        group_by: UsageGroupBy = UsageGroupBy.NONE,
+    ) -> UsageSummary:
+        """Aggregated call count / tokens / cost over a window."""
+        data = await self._transport.request(
+            "GET",
+            "/v1/llm/usage-summary",
+            params=_usage_params(
+                from_=from_,
+                to=to,
+                chart_id=chart_id,
+                interpretation_type=interpretation_type,
+                language=language,
+                tier=tier,
+                group_by=group_by,
+            ),
+        )
+        return UsageSummary.model_validate(data)
+
 
 # ──────────────────────────────────────────────────────────────────
 # Sync LLM resource
@@ -613,3 +724,68 @@ class SyncLLM:
             raise
         except AstrolinkersError as exc:
             yield ErrorEvent(error=str(exc))
+
+    # ── Persistence: list / read past interpretations + usage ────
+
+    def list_stored(
+        self,
+        *,
+        chart_id: str | None = None,
+        interpretation_type: str | None = None,
+        language: Language | None = None,
+        tier: InterpretationTier | None = None,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> InterpretationListPage:
+        """List previously generated LLM interpretations, newest first."""
+        data = self._transport.request(
+            "GET",
+            "/v1/llm/interpretations",
+            params=_list_stored_params(
+                chart_id=chart_id,
+                interpretation_type=interpretation_type,
+                language=language,
+                tier=tier,
+                limit=limit,
+                offset=offset,
+            ),
+        )
+        return InterpretationListPage.model_validate(data)
+
+    def retrieve_stored(
+        self,
+        interpretation_id: str,
+    ) -> StoredLLMInterpretation:
+        """Read one stored LLM interpretation by id."""
+        data = self._transport.request(
+            "GET",
+            f"/v1/llm/interpretations/{interpretation_id}",
+        )
+        return StoredLLMInterpretation.model_validate(data)
+
+    def usage_summary(
+        self,
+        *,
+        from_: datetime,
+        to: datetime,
+        chart_id: str | None = None,
+        interpretation_type: str | None = None,
+        language: Language | None = None,
+        tier: InterpretationTier | None = None,
+        group_by: UsageGroupBy = UsageGroupBy.NONE,
+    ) -> UsageSummary:
+        """Aggregated call count / tokens / cost over a window."""
+        data = self._transport.request(
+            "GET",
+            "/v1/llm/usage-summary",
+            params=_usage_params(
+                from_=from_,
+                to=to,
+                chart_id=chart_id,
+                interpretation_type=interpretation_type,
+                language=language,
+                tier=tier,
+                group_by=group_by,
+            ),
+        )
+        return UsageSummary.model_validate(data)

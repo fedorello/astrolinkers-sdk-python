@@ -21,8 +21,10 @@ Usage::
 
 from __future__ import annotations
 
+from collections.abc import AsyncIterator, Iterator, Mapping
+from contextlib import asynccontextmanager, contextmanager
 from types import TracebackType
-from typing import Self
+from typing import Any, Self
 
 import httpx
 
@@ -34,12 +36,24 @@ from astrolinkers._settings import (
     ClientSettings,
 )
 from astrolinkers._transport import AsyncTransport, SyncTransport
+from astrolinkers.resources.api_keys import AsyncApiKeys, SyncApiKeys
 from astrolinkers.resources.charts import AsyncCharts, SyncCharts
+from astrolinkers.resources.compatibility import (
+    AsyncCompatibility,
+    SyncCompatibility,
+)
+from astrolinkers.resources.feedback import AsyncFeedback, SyncFeedback
+from astrolinkers.resources.health import AsyncHealth, SyncHealth
 from astrolinkers.resources.interpretations import (
     AsyncInterpretations,
     SyncInterpretations,
 )
 from astrolinkers.resources.llm import AsyncLLM, SyncLLM
+from astrolinkers.resources.plans import AsyncPlans, SyncPlans
+from astrolinkers.resources.profiles import AsyncProfiles, SyncProfiles
+from astrolinkers.resources.reports import AsyncReports, SyncReports
+from astrolinkers.resources.usage import AsyncUsage, SyncUsage
+from astrolinkers.resources.vedic import AsyncVedic, SyncVedic
 
 
 class AsyncAstrolinkers:
@@ -82,9 +96,69 @@ class AsyncAstrolinkers:
             user_agent_suffix=user_agent_suffix,
         )
         self._transport = AsyncTransport(settings, http_client=http_client)
+        self.api_keys = AsyncApiKeys(self._transport)
         self.charts = AsyncCharts(self._transport)
-        self.llm = AsyncLLM(self._transport)
+        self.compatibility = AsyncCompatibility(self._transport)
+        self.feedback = AsyncFeedback(self._transport)
+        self.health = AsyncHealth(self._transport)
         self.interpretations = AsyncInterpretations(self._transport)
+        self.llm = AsyncLLM(self._transport)
+        self.plans = AsyncPlans(self._transport)
+        self.profiles = AsyncProfiles(self._transport)
+        self.reports = AsyncReports(self._transport)
+        self.usage = AsyncUsage(self._transport)
+        self.vedic = AsyncVedic(self._transport)
+
+    async def request(
+        self,
+        method: str,
+        path: str,
+        *,
+        params: Mapping[str, Any] | None = None,
+        json: Any | None = None,
+        headers: Mapping[str, str] | None = None,
+    ) -> Any:
+        """Escape hatch — make an arbitrary authenticated API call.
+
+        Use this when a server endpoint exists that the SDK does not
+        wrap yet. Errors map into the same typed hierarchy as the
+        resource methods (``AuthenticationError`` / ``RateLimitedError``
+        / etc.) and the JSON body is parsed and returned as-is.
+
+        Returns ``None`` for 204 / empty responses.
+        """
+        return await self._transport.request(
+            method,
+            path,
+            params=params,
+            json=json,
+            headers=headers,
+        )
+
+    @asynccontextmanager
+    async def stream(
+        self,
+        method: str,
+        path: str,
+        *,
+        params: Mapping[str, Any] | None = None,
+        json: Any | None = None,
+        headers: Mapping[str, str] | None = None,
+    ) -> AsyncIterator[httpx.Response]:
+        """Escape hatch for streaming responses.
+
+        Yields the raw ``httpx.Response``; the caller drains the body
+        (e.g. ``async for chunk in resp.aiter_bytes()``). The retry +
+        error-mapping behaviour matches :meth:`request`.
+        """
+        async with self._transport.stream(
+            method,
+            path,
+            params=params,
+            json=json,
+            headers=headers,
+        ) as response:
+            yield response
 
     async def aclose(self) -> None:
         """Release the underlying HTTP connection pool."""
@@ -125,9 +199,61 @@ class Astrolinkers:
             user_agent_suffix=user_agent_suffix,
         )
         self._transport = SyncTransport(settings, http_client=http_client)
+        self.api_keys = SyncApiKeys(self._transport)
         self.charts = SyncCharts(self._transport)
-        self.llm = SyncLLM(self._transport)
+        self.compatibility = SyncCompatibility(self._transport)
+        self.feedback = SyncFeedback(self._transport)
+        self.health = SyncHealth(self._transport)
         self.interpretations = SyncInterpretations(self._transport)
+        self.llm = SyncLLM(self._transport)
+        self.plans = SyncPlans(self._transport)
+        self.profiles = SyncProfiles(self._transport)
+        self.reports = SyncReports(self._transport)
+        self.usage = SyncUsage(self._transport)
+        self.vedic = SyncVedic(self._transport)
+
+    def request(
+        self,
+        method: str,
+        path: str,
+        *,
+        params: Mapping[str, Any] | None = None,
+        json: Any | None = None,
+        headers: Mapping[str, str] | None = None,
+    ) -> Any:
+        """Escape hatch — make an arbitrary authenticated API call.
+
+        Use this when a server endpoint exists that the SDK does not
+        wrap yet. Errors map into the same typed hierarchy as the
+        resource methods.
+        """
+        return self._transport.request(
+            method,
+            path,
+            params=params,
+            json=json,
+            headers=headers,
+        )
+
+    @contextmanager
+    def stream(
+        self,
+        method: str,
+        path: str,
+        *,
+        params: Mapping[str, Any] | None = None,
+        json: Any | None = None,
+        headers: Mapping[str, str] | None = None,
+    ) -> Iterator[httpx.Response]:
+        """Escape hatch for streaming responses."""
+        with self._transport.stream(
+            method,
+            path,
+            params=params,
+            json=json,
+            headers=headers,
+        ) as response:
+            yield response
 
     def close(self) -> None:
         """Release the underlying HTTP connection pool."""

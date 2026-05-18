@@ -11,8 +11,26 @@ interpretations.
   on transient failures.
 * **Multilingual** — English plus 8 Indian languages + Spanish out of the box.
 
-> Status: alpha (`0.1.0`). Public API may shift between minor releases until
+> Status: alpha (`0.2.0`). Public API may shift between minor releases until
 > `1.0`. Pin the minor version when integrating.
+
+## Resource map
+
+| Resource | Wraps | Notes |
+|---|---|---|
+| `client.charts` | `/v1/charts` | Compute / fetch natal charts. |
+| `client.llm` | `/v1/llm/...` (sync + stream) | LLM interpretations, persistence, usage summary. |
+| `client.interpretations` | `/v1/interpretations` | Template-driven interpretations + statements. |
+| `client.compatibility` | `/v1/compatibility` | Synastry + ashtakoota between two charts. |
+| `client.feedback` | `/v1/feedback` | Feedback on statements + rolling template accuracy. |
+| `client.profiles` | `/v1/charts/{id}/profile/talent` | Talent / hiring skill profile. |
+| `client.reports` | `/v1/reports` | Async PDF / HTML report generation. |
+| `client.vedic` | 58 × `/v1/vedic/...` | Full Vedic engine — divisional, dasha, shadbala, panchanga, predictive, KP, muhurta. |
+| `client.api_keys` | `/v1/api-keys` | Issue / list / revoke your own tokens. |
+| `client.plans` | `/v1/plans`, `/v1/tenant/plan` | Catalogue + tenant plan management. |
+| `client.usage` | `/v1/api-keys/{id}/usage`, `/v1/tenant/usage` | Hourly API-call buckets. |
+| `client.health` | `/healthz`, `/readyz`, `/version` | Liveness / readiness / build info. |
+| `client.request(...)` / `client.stream(...)` | any | Escape hatch for endpoints not yet wrapped. |
 
 ---
 
@@ -84,20 +102,24 @@ for event in client.llm.chart_reading_stream(chart_id=chart.id, tier="standard")
 
 Async usage is identical — `async for event in client.llm.chart_reading_stream(...)`.
 
-## Re-reading past interpretations
+## Re-reading past LLM interpretations
 
-Every successful LLM call is persisted server-side. List and read past
-interpretations without re-billing:
+Every successful LLM call is persisted server-side. List and read
+past LLM interpretations without re-billing — the persistence methods
+live on `client.llm`:
 
 ```python
-page = client.interpretations.list(chart_id=chart.id, limit=20)
+page = client.llm.list_stored(chart_id=chart.id, limit=20)
 for row in page.items:
     print(row.id, row.interpretation_type, row.cost_usd, row.created_at)
 
 # Fetch one back later.
-row = client.interpretations.retrieve(page.items[0].id)
+row = client.llm.retrieve_stored(page.items[0].id)
 print(row.content)
 ```
+
+(Template-driven interpretations have their own resource at
+`client.interpretations.create / retrieve`.)
 
 ## Usage analytics
 
@@ -106,14 +128,52 @@ from datetime import datetime, UTC, timedelta
 from astrolinkers import UsageGroupBy
 
 today = datetime.now(UTC)
-summary = client.interpretations.usage_summary(
+summary = client.llm.usage_summary(
     from_=today - timedelta(days=30),
     to=today,
     group_by=UsageGroupBy.TIER,
 )
-print(f"30-day spend: ${summary.total.cost_usd:.4f}")
+print(f"30-day LLM spend: ${summary.total.cost_usd:.4f}")
 for bucket in summary.breakdown:
     print(f"  {bucket.label}: {bucket.call_count} calls, ${bucket.cost_usd:.4f}")
+```
+
+## Vedic engine
+
+```python
+from astrolinkers import Varga, TheoArea, HouseSignificator
+
+# Divisional chart D9 (navamsa).
+d9 = client.vedic.divisional(chart.id, Varga.D9)
+
+# Composite per-planet strength.
+strengths = client.vedic.composite_strength(chart.id)
+
+# Date-bound career probability folding in current transit modifier.
+prob = client.vedic.materialization_at(
+    chart.id, TheoArea.CAREER, at=datetime.now(UTC),
+)
+
+# Full theme probability decomposition.
+career = client.vedic.probability(chart.id, HouseSignificator.CAREER)
+```
+
+Every Vedic method returns a `dict[str, Any]` — the engine output is
+deeply nested structured JSON that is more naturally indexed than
+matched against a typed model.
+
+## Escape hatch
+
+For any endpoint the SDK does not yet wrap, the typed client still
+gives you authenticated requests with the same retry / error-mapping
+behaviour:
+
+```python
+data = client.request("GET", "/v1/some-new-endpoint", params={"x": 1})
+
+with client.stream("POST", "/v1/some-stream") as resp:
+    for line in resp.iter_lines():
+        ...
 ```
 
 ## Error handling
