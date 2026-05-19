@@ -4,10 +4,20 @@ All notable changes to this SDK are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project
 adheres to [Semantic Versioning](https://semver.org/).
 
-## [0.2.0] — full API coverage
+## [0.2.0] — full API coverage + PyPI distribution name
 
 This release completes the API surface — every public endpoint of
-the Astrolinkers API now has a typed SDK method.
+the Astrolinkers API now has a typed SDK method — and is the first
+release published to PyPI.
+
+### Changed
+
+* **PyPI distribution name is now `astrolinkers-sdk`** (was
+  `astrolinkers`). The import name is unchanged — user code still
+  reads `from astrolinkers import Astrolinkers`. The brand-suffixed
+  distribution name makes "this is an SDK" obvious on PyPI search
+  and matches the GitHub repo (`astrolinkers-sdk-python`).
+  Install with `pip install astrolinkers-sdk`.
 
 ### Added
 

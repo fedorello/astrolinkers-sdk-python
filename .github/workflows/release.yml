@@ -1,0 +1,89 @@
+name: Release
+
+# Fires when a `vX.Y.Z` tag is pushed. The job builds the wheel +
+# sdist, then publishes them to PyPI via OIDC-based Trusted
+# Publishing — no token needs to be stored in the repository.
+#
+# Prerequisites (one-time, configured by the project owner on PyPI):
+#   1. The PyPI account has 2FA enabled.
+#   2. A "Pending publisher" is registered at:
+#        https://pypi.org/manage/account/publishing/
+#      with the following exact values:
+#        - PyPI Project Name : astrolinkers-sdk
+#        - Owner             : fedorello
+#        - Repository name   : astrolinkers-sdk-python
+#        - Workflow filename : release.yml
+#        - Environment name  : pypi
+#
+# After the first successful publish, "Pending" flips to "Active"
+# and subsequent releases just need a new tag.
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+jobs:
+  build-and-publish:
+    name: Build + publish to PyPI
+    runs-on: ubuntu-latest
+    # The ``pypi`` environment matches what is registered as the
+    # Trusted Publisher on PyPI. Protect the environment in repo
+    # settings (e.g. require manual approval) for extra safety.
+    environment:
+      name: pypi
+      url: https://pypi.org/p/astrolinkers-sdk
+    permissions:
+      # `id-token: write` is the OIDC token the PyPI publish action
+      # exchanges for short-lived upload credentials. `contents: read`
+      # is the minimum needed to check the tag out.
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Check out the tag
+        uses: actions/checkout@v5
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Pin Python 3.13
+        run: uv python pin 3.13
+
+      - name: Install dev dependencies
+        run: uv sync --frozen
+
+      - name: Verify the tag matches the pyproject version
+        # Refuse to publish if the tag does not equal the version
+        # declared in pyproject.toml — keeps mis-tagged releases
+        # from accidentally polluting PyPI.
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          PROJECT_VERSION=$(uv run python -c "import tomllib, pathlib; print(tomllib.loads(pathlib.Path('pyproject.toml').read_text())['project']['version'])")
+          if [ "$TAG" != "$PROJECT_VERSION" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME ($TAG) does not match pyproject.toml version ($PROJECT_VERSION)."
+            exit 1
+          fi
+
+      - name: Run quality gates
+        # The same checks that gate every PR — never publish a build
+        # that does not pass lint + mypy + tests.
+        run: |
+          uv run ruff check src tests
+          uv run mypy
+          uv run pytest -q
+
+      - name: Build sdist + wheel
+        run: uv build
+
+      - name: Publish to PyPI (Trusted Publishing)
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          # No `password:` — OIDC handles the upload credential.
+          # `attestations: true` ships PEP 740 build provenance with
+          # the upload, so downloads can be cryptographically tied
+          # back to this repo + tag.
+          attestations: true
+          print-hash: true

@@ -37,9 +37,9 @@ interpretations.
 ## Install
 
 ```bash
-pip install astrolinkers
+pip install astrolinkers-sdk
 # or with uv
-uv add astrolinkers
+uv add astrolinkers-sdk
 ```
 
 Requires Python 3.12+.
@@ -228,7 +228,7 @@ asyncio.run(main())
 ## Versioning
 
 Semantic versioning. Until `1.0` breaking changes may land on minors; pin
-your minor (`astrolinkers~=0.1`) and bump deliberately.
+your minor (`astrolinkers-sdk~=0.2`) and bump deliberately.
 
 ## License
 
