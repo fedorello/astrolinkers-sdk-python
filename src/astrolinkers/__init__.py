@@ -67,7 +67,7 @@ from astrolinkers.types.feedback import (
     TemplateAccuracy,
 )
 from astrolinkers.types.plans import Plan, TenantPlan
-from astrolinkers.types.profiles import SkillProfile
+from astrolinkers.types.profiles import SkillProfile, SkillScore
 from astrolinkers.types.reports import (
     Report,
     ReportFormat,
@@ -142,6 +142,7 @@ __all__ = [
     "TenantPlan",
     # Profiles
     "SkillProfile",
+    "SkillScore",
     # Reports
     "Report",
     "ReportFormat",

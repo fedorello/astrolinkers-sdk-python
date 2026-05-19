@@ -27,19 +27,20 @@ CHART_PAYLOAD = {
         "moment": "1990-04-15T02:00:00Z",
         "latitude": 28.6139,
         "longitude": 77.209,
-        "timezone": "Asia/Kolkata",
     },
     "planets": [
         {
             "planet": "sun",
             "longitude": 24.5,
+            "sign": "aries",
+            "degree_in_sign": 24.5,
             "speed_per_day": 0.985,
             "is_retrograde": False,
             "nakshatra": "Bharani",
             "pada": 3,
         },
     ],
-    "houses": [{"house_number": 1, "longitude": 5.0}],
+    "houses": [{"house": 1, "longitude": 5.0}],
 }
 
 
@@ -54,7 +55,6 @@ def test_sync_create_sends_birth_block_and_parses_chart(
         moment=datetime(1990, 4, 15, 2, 0, tzinfo=UTC),
         latitude=28.6139,
         longitude=77.2090,
-        timezone="Asia/Kolkata",
         system=AstrologySystem.VEDIC,
         house_system=HouseSystem.WHOLE_SIGN,
         ayanamsha=AyanamshaType.LAHIRI,
@@ -63,7 +63,6 @@ def test_sync_create_sends_birth_block_and_parses_chart(
     assert chart.id == CHART_PAYLOAD["id"]
     # The request body matched our expectation.
     body = route.calls.last.request.read().decode()
-    assert "Asia/Kolkata" in body
     assert "lahiri" in body
     assert "vedic" in body
     assert "1990-04-15T02:00:00" in body

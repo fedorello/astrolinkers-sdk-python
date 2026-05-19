@@ -60,49 +60,45 @@ async def test_async_request_escape_hatch(
 # ─────────────────────────────────────────────────────────────────
 
 
-def test_api_keys_issue_returns_token(
+_API_KEY_PAYLOAD = {
+    "id": "k1",
+    "name": "n",
+    "key_prefix": "alk_live",
+    "key_last4": "abcd",
+    "display": "alk_live_…abcd",
+    "scopes": ["charts:read"],
+    "owner_tenant_id": "t1",
+    "created_at": "2026-05-18T22:00:00Z",
+    "created_by": "u1",
+}
+
+
+def test_api_keys_issue_returns_plaintext(
     sync_client: Astrolinkers,
     respx_mock: respx.MockRouter,
 ) -> None:
     respx_mock.post("/v1/api-keys").mock(
         return_value=httpx.Response(
             201,
-            json={
-                "api_key": {
-                    "id": "k1",
-                    "name": "n",
-                    "scopes": ["charts:read"],
-                    "created_at": "2026-05-18T22:00:00Z",
-                },
-                "token": "alk_secret_…",
-            },
+            json={**_API_KEY_PAYLOAD, "plaintext": "alk_secret_…"},
         ),
     )
     issued = sync_client.api_keys.issue(
         name="n",
         scopes=["charts:read"],
     )
-    assert issued.token == "alk_secret_…"
-    assert issued.api_key.id == "k1"
+    assert issued.plaintext == "alk_secret_…"
+    assert issued.id == "k1"
 
 
-def test_api_keys_list_returns_items(
+def test_api_keys_list_returns_keys(
     sync_client: Astrolinkers,
     respx_mock: respx.MockRouter,
 ) -> None:
     respx_mock.get("/v1/api-keys").mock(
         return_value=httpx.Response(
             200,
-            json={
-                "items": [
-                    {
-                        "id": "k1",
-                        "name": "n",
-                        "scopes": ["charts:read"],
-                        "created_at": "2026-05-18T22:00:00Z",
-                    }
-                ]
-            },
+            json={"keys": [_API_KEY_PAYLOAD]},
         ),
     )
     keys = sync_client.api_keys.list()
@@ -117,13 +113,7 @@ def test_api_keys_revoke(
     respx_mock.post("/v1/api-keys/k1/revoke").mock(
         return_value=httpx.Response(
             200,
-            json={
-                "id": "k1",
-                "name": "n",
-                "scopes": ["charts:read"],
-                "created_at": "2026-05-18T22:00:00Z",
-                "revoked_at": "2026-05-18T23:00:00Z",
-            },
+            json={**_API_KEY_PAYLOAD, "revoked_at": "2026-05-18T23:00:00Z"},
         ),
     )
     revoked = sync_client.api_keys.revoke("k1")
@@ -247,19 +237,53 @@ def test_interpretations_template_create(
                 "locale": "en",
                 "tone": "corporate",
                 "statements": [
-                    {"id": "s1", "template_id": "t1", "skill_id": "k1", "text": "x"},
+                    {
+                        "id": "s1",
+                        "skill_id": "k1",
+                        "template_id": "t1",
+                        "kind": "talent",
+                        "locale": "en",
+                        "body": "x",
+                        "score": 0.9,
+                        "rule_path": ["r1"],
+                        "created_at": "2026-05-18T22:00:00Z",
+                    },
                 ],
-                "created_at": "2026-05-18T22:00:00Z",
             },
         ),
     )
     interp = sync_client.interpretations.create(chart_id="c1")
     assert interp.statements[0].id == "s1"
+    assert interp.statements[0].body == "x"
+    assert interp.statements[0].score == 0.9
 
 
 # ─────────────────────────────────────────────────────────────────
 # plans
 # ─────────────────────────────────────────────────────────────────
+
+
+_FREE_PLAN_PAYLOAD = {
+    "tier": "free",
+    "display_name": "Free",
+    "monthly_price_usd": 0.0,
+    "rate_limit_capacity": 60.0,
+    "rate_limit_refill_per_second": 1.0,
+    "llm_cost_cap_per_hour_usd": None,
+    "status": "active",
+    "features": [],
+}
+
+_PRO_PLAN_PAYLOAD = {
+    "tier": "pro",
+    "display_name": "Pro",
+    "monthly_price_usd": 49.0,
+    "rate_limit_capacity": 600.0,
+    "rate_limit_refill_per_second": 10.0,
+    "llm_cost_cap_per_hour_usd": 5.0,
+    "status": "active",
+    "features": ["llm"],
+}
 
 
 def test_plans_list(
@@ -269,16 +293,14 @@ def test_plans_list(
     respx_mock.get("/v1/plans").mock(
         return_value=httpx.Response(
             200,
-            json={
-                "items": [
-                    {"tier": "free", "name": "Free"},
-                    {"tier": "pro", "name": "Pro", "monthly_price_usd": 49.0},
-                ]
-            },
+            json={"plans": [_FREE_PLAN_PAYLOAD, _PRO_PLAN_PAYLOAD]},
         ),
     )
     plans = sync_client.plans.list()
     assert {p.tier for p in plans} == {"free", "pro"}
+    pro = next(p for p in plans if p.tier == "pro")
+    assert pro.display_name == "Pro"
+    assert pro.monthly_price_usd == 49.0
 
 
 def test_plans_set_tenant_plan(
@@ -286,10 +308,19 @@ def test_plans_set_tenant_plan(
     respx_mock: respx.MockRouter,
 ) -> None:
     route = respx_mock.post("/v1/tenant/plan").mock(
-        return_value=httpx.Response(200, json={"tier": "pro"}),
+        return_value=httpx.Response(
+            200,
+            json={
+                "tenant_id": "t1",
+                "display_name": "Acme",
+                "plan": _PRO_PLAN_PAYLOAD,
+                "plan_updated_at": "2026-05-18T22:00:00Z",
+                "created_at": "2026-01-01T00:00:00Z",
+            },
+        ),
     )
     tp = sync_client.plans.set_tenant_plan(plan_tier="pro")
-    assert tp.tier == "pro"
+    assert tp.plan.tier == "pro"
     body = route.calls.last.request.read().decode()
     assert "pro" in body
 
@@ -306,12 +337,24 @@ def test_profiles_talent(
     respx_mock.get("/v1/charts/c1/profile/talent").mock(
         return_value=httpx.Response(
             200,
-            json={"chart_id": "c1", "locale": "en", "skills": [{"id": "s1"}]},
+            json={
+                "chart_id": "c1",
+                "scores": [
+                    {
+                        "skill_id": "leadership",
+                        "value": 0.82,
+                        "level": "high",
+                        "contributing_rules": ["r1", "r2"],
+                    },
+                ],
+            },
         ),
     )
     prof = sync_client.profiles.talent("c1")
     assert prof.chart_id == "c1"
-    assert prof.skills[0]["id"] == "s1"
+    assert prof.scores[0].skill_id == "leadership"
+    assert prof.scores[0].value == 0.82
+    assert prof.scores[0].level == "high"
 
 
 # ─────────────────────────────────────────────────────────────────
@@ -331,10 +374,9 @@ def test_reports_create_and_retrieve(
                 "chart_id": "c1",
                 "kind": "talent_lens",
                 "format": "pdf",
-                "locale": "en",
-                "tone": "corporate",
                 "status": "pending",
                 "created_at": "2026-05-18T22:00:00Z",
+                "updated_at": "2026-05-18T22:00:00Z",
             },
         ),
     )
@@ -346,11 +388,11 @@ def test_reports_create_and_retrieve(
                 "chart_id": "c1",
                 "kind": "talent_lens",
                 "format": "pdf",
-                "locale": "en",
-                "tone": "corporate",
                 "status": "ready",
                 "artifact_url": "https://signed.example/r1.pdf",
+                "artifact_key": "reports/r1.pdf",
                 "created_at": "2026-05-18T22:00:00Z",
+                "updated_at": "2026-05-18T22:05:00Z",
             },
         ),
     )
@@ -359,6 +401,7 @@ def test_reports_create_and_retrieve(
     polled = sync_client.reports.retrieve("r1")
     assert polled.status == "ready"
     assert polled.artifact_url is not None
+    assert polled.artifact_key == "reports/r1.pdf"
 
 
 # ─────────────────────────────────────────────────────────────────
@@ -371,11 +414,26 @@ def test_usage_per_key_and_tenant(
     respx_mock: respx.MockRouter,
 ) -> None:
     payload = {
-        "buckets": [
-            {"hour": "2026-05-18T22:00:00Z", "request_count": 5},
-            {"hour": "2026-05-18T23:00:00Z", "request_count": 3},
-        ],
+        "since": "2026-05-18T22:00:00Z",
+        "until": "2026-05-19T00:00:00Z",
         "total_requests": 8,
+        "total_errors": 0,
+        "buckets": [
+            {
+                "bucket_hour": "2026-05-18T22:00:00Z",
+                "requests": 5,
+                "errors_4xx": 0,
+                "errors_5xx": 0,
+                "latency_p95_ms": 120.0,
+            },
+            {
+                "bucket_hour": "2026-05-18T23:00:00Z",
+                "requests": 3,
+                "errors_4xx": 0,
+                "errors_5xx": 0,
+                "latency_p95_ms": 95.0,
+            },
+        ],
     }
     respx_mock.get("/v1/api-keys/k1/usage").mock(
         return_value=httpx.Response(200, json=payload),

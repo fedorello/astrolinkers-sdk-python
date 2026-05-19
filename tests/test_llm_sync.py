@@ -85,7 +85,7 @@ def test_chart_reading_uses_dedicated_path(
         return_value=httpx.Response(200, json=payload),
     )
     result = sync_client.llm.chart_reading(chart_id="c1", tier=InterpretationTier.PREMIUM)
-    assert result.interpretation_type.value == "chart_reading"
+    assert result.interpretation_type == "chart_reading"
 
 
 def test_dasha_forecast_sends_at(

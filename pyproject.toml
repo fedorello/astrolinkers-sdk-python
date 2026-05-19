@@ -6,7 +6,7 @@
 # and a clean brand-only import (e.g. ``launchdarkly-server-sdk``
 # -> ``import ldclient``).
 name = "astrolinkers-sdk"
-version = "0.2.0"
+version = "0.2.1"
 description = "Official Python SDK for the Astrolinkers API — natal charts, talent profiles, Vedic calculations and engine-grounded LLM interpretations."
 readme = "README.md"
 requires-python = ">=3.12"

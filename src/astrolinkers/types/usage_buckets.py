@@ -11,25 +11,34 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict
 
 
 class HourlyUsageBucket(BaseModel):
-    """API-call counts in one wall-clock hour."""
+    """API-call counts in one wall-clock hour.
+
+    Mirrors ``UsageBucketResponse`` on the wire.
+    """
 
     model_config = ConfigDict(frozen=True)
 
-    hour: datetime
-    request_count: int
-    success_count: int = 0
-    error_count: int = 0
-    last_request_at: datetime | None = None
+    bucket_hour: datetime
+    requests: int
+    errors_4xx: int
+    errors_5xx: int
+    latency_p95_ms: float | None = None
 
 
 class HourlyUsage(BaseModel):
-    """Series of hourly buckets returned by the usage endpoints."""
+    """Series of hourly buckets returned by the usage endpoints.
+
+    Mirrors ``UsageRangeResponse`` on the wire.
+    """
 
     model_config = ConfigDict(extra="allow")
 
-    buckets: list[HourlyUsageBucket] = Field(default_factory=list)
-    total_requests: int = 0
+    since: datetime
+    until: datetime
+    total_requests: int
+    total_errors: int
+    buckets: list[HourlyUsageBucket]

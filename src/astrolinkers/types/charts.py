@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -21,11 +20,6 @@ class BirthData(BaseModel):
     )
     latitude: float = Field(..., ge=-90, le=90)
     longitude: float = Field(..., ge=-180, le=180)
-    timezone: str | None = Field(
-        default=None,
-        description="Olson timezone name of the birth location (e.g. Asia/Kolkata).",
-    )
-    location_name: str | None = None
 
 
 class PlanetPosition(BaseModel):
@@ -35,12 +29,16 @@ class PlanetPosition(BaseModel):
 
     planet: str
     longitude: float
-    speed_per_day: float | None = None
-    is_retrograde: bool | None = None
+    sign: str
+    degree_in_sign: float
+    speed_per_day: float
+    is_retrograde: bool
     nakshatra: str | None = None
     pada: int | None = None
     global_pada: int | None = None
     nakshatra_lord: str | None = None
+    navamsa_sign: str | None = None
+    navamsa_lord: str | None = None
 
 
 class HouseCusp(BaseModel):
@@ -48,7 +46,7 @@ class HouseCusp(BaseModel):
 
     model_config = ConfigDict(frozen=True)
 
-    house_number: int = Field(..., ge=1, le=12)
+    house: int = Field(..., ge=1, le=12)
     longitude: float
 
 
@@ -69,4 +67,3 @@ class Chart(BaseModel):
     birth: BirthData
     planets: list[PlanetPosition]
     houses: list[HouseCusp] = Field(default_factory=list)
-    metadata: dict[str, Any] = Field(default_factory=dict)

@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, Literal
+from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict
 
 ReportKind = Literal["talent_lens", "personal_reader"]
 ReportFormat = Literal["html", "pdf"]
@@ -26,11 +26,9 @@ class Report(BaseModel):
     chart_id: str
     kind: ReportKind
     format: ReportFormat
-    locale: str
-    tone: str
     status: ReportStatus
     artifact_url: str | None = None
+    artifact_key: str | None = None
     error: str | None = None
     created_at: datetime
-    updated_at: datetime | None = None
-    metadata: dict[str, Any] = Field(default_factory=dict)
+    updated_at: datetime

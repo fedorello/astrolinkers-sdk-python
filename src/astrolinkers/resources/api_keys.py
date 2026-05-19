@@ -2,7 +2,7 @@
 
 Lets a tenant rotate or scope their own keys without going through
 the dashboard. The plaintext bearer token is returned exactly once
-on issue (``IssuedApiKey.token``); store it immediately.
+on issue (``IssuedApiKey.plaintext``); store it immediately.
 """
 
 from __future__ import annotations
@@ -42,7 +42,7 @@ class AsyncApiKeys:
         expires_at: datetime | None = None,
         metadata: dict[str, str] | None = None,
     ) -> IssuedApiKey:
-        """Issue a new key. The plaintext ``token`` is in the response."""
+        """Issue a new key. The plaintext token is in ``plaintext``."""
         data = await self._transport.request(
             "POST",
             "/v1/api-keys",
@@ -66,7 +66,7 @@ class AsyncApiKeys:
             "/v1/api-keys",
             params={"include_revoked": include_revoked},
         )
-        return [ApiKey.model_validate(item) for item in data.get("items", data)]
+        return [ApiKey.model_validate(item) for item in data["keys"]]
 
     async def revoke(self, key_id: str) -> ApiKey:
         """Revoke a key by id. Returns the post-revocation metadata."""
@@ -91,7 +91,7 @@ class SyncApiKeys:
         expires_at: datetime | None = None,
         metadata: dict[str, str] | None = None,
     ) -> IssuedApiKey:
-        """Issue a new key. The plaintext ``token`` is in the response."""
+        """Issue a new key. The plaintext token is in ``plaintext``."""
         data = self._transport.request(
             "POST",
             "/v1/api-keys",
@@ -115,7 +115,7 @@ class SyncApiKeys:
             "/v1/api-keys",
             params={"include_revoked": include_revoked},
         )
-        return [ApiKey.model_validate(item) for item in data.get("items", data)]
+        return [ApiKey.model_validate(item) for item in data["keys"]]
 
     def revoke(self, key_id: str) -> ApiKey:
         """Revoke a key by id. Returns the post-revocation metadata."""

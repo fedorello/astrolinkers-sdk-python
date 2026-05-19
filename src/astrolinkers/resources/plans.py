@@ -15,8 +15,7 @@ class AsyncPlans:
     async def list(self) -> list[Plan]:
         """Catalogue of all available plan tiers."""
         data = await self._transport.request("GET", "/v1/plans")
-        items = data.get("items", data)
-        return [Plan.model_validate(item) for item in items]
+        return [Plan.model_validate(item) for item in data["plans"]]
 
     async def get_tenant_plan(self) -> TenantPlan:
         """Plan the calling tenant is currently on."""
@@ -42,8 +41,7 @@ class SyncPlans:
     def list(self) -> list[Plan]:
         """Catalogue of all available plan tiers."""
         data = self._transport.request("GET", "/v1/plans")
-        items = data.get("items", data)
-        return [Plan.model_validate(item) for item in items]
+        return [Plan.model_validate(item) for item in data["plans"]]
 
     def get_tenant_plan(self) -> TenantPlan:
         """Plan the calling tenant is currently on."""

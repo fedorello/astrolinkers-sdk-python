@@ -14,8 +14,6 @@ def _build_payload(
     moment: datetime,
     latitude: float,
     longitude: float,
-    timezone: str | None,
-    location_name: str | None,
     system: AstrologySystem,
     house_system: HouseSystem,
     ayanamsha: AyanamshaType | str | None,
@@ -30,10 +28,6 @@ def _build_payload(
         "latitude": latitude,
         "longitude": longitude,
     }
-    if timezone is not None:
-        birth["timezone"] = timezone
-    if location_name is not None:
-        birth["location_name"] = location_name
 
     payload: dict[str, object] = {
         "birth": birth,
@@ -59,10 +53,8 @@ class AsyncCharts:
         moment: datetime,
         latitude: float,
         longitude: float,
-        timezone: str | None = None,
-        location_name: str | None = None,
         system: AstrologySystem = AstrologySystem.VEDIC,
-        house_system: HouseSystem = HouseSystem.WHOLE_SIGN,
+        house_system: HouseSystem = HouseSystem.PLACIDUS,
         ayanamsha: AyanamshaType | str | None = AyanamshaType.LAHIRI,
     ) -> Chart:
         """Compute and persist a new natal chart.
@@ -71,8 +63,6 @@ class AsyncCharts:
             moment: Birth instant as an aware UTC datetime.
             latitude: Birth latitude in degrees (-90 to 90).
             longitude: Birth longitude in degrees (-180 to 180).
-            timezone: Optional Olson timezone identifier.
-            location_name: Optional human-readable place name.
             system: Tropical (western) or sidereal (vedic) zodiac.
             house_system: House-division convention.
             ayanamsha: Sidereal offset; ignored for the western system.
@@ -84,8 +74,6 @@ class AsyncCharts:
             moment=moment,
             latitude=latitude,
             longitude=longitude,
-            timezone=timezone,
-            location_name=location_name,
             system=system,
             house_system=house_system,
             ayanamsha=ayanamsha,
@@ -111,10 +99,8 @@ class SyncCharts:
         moment: datetime,
         latitude: float,
         longitude: float,
-        timezone: str | None = None,
-        location_name: str | None = None,
         system: AstrologySystem = AstrologySystem.VEDIC,
-        house_system: HouseSystem = HouseSystem.WHOLE_SIGN,
+        house_system: HouseSystem = HouseSystem.PLACIDUS,
         ayanamsha: AyanamshaType | str | None = AyanamshaType.LAHIRI,
     ) -> Chart:
         """Compute and persist a new natal chart. See :meth:`AsyncCharts.create`."""
@@ -122,8 +108,6 @@ class SyncCharts:
             moment=moment,
             latitude=latitude,
             longitude=longitude,
-            timezone=timezone,
-            location_name=location_name,
             system=system,
             house_system=house_system,
             ayanamsha=ayanamsha,

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -19,10 +18,14 @@ class Statement(BaseModel):
     model_config = ConfigDict(extra="allow")
 
     id: str
-    template_id: str
     skill_id: str
-    text: str
-    confidence: float | None = None
+    template_id: str
+    kind: str
+    locale: str
+    body: str
+    score: float
+    rule_path: list[str]
+    created_at: datetime
 
 
 class TemplateInterpretation(BaseModel):
@@ -35,5 +38,3 @@ class TemplateInterpretation(BaseModel):
     locale: str
     tone: str
     statements: list[Statement] = Field(default_factory=list)
-    metadata: dict[str, Any] = Field(default_factory=dict)
-    created_at: datetime

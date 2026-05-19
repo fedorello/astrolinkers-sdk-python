@@ -57,22 +57,23 @@ class AstrologySystem(StrEnum):
 class AyanamshaType(StrEnum):
     """Sidereal offset used by the Vedic engine.
 
-    Only the most common ayanamshas are listed; the API accepts more
-    via the raw string when needed.
+    The server currently only accepts ``lahiri``. The resource
+    signature still accepts ``AyanamshaType | str`` so callers can
+    forward a future server-side variant without an SDK upgrade.
     """
 
     LAHIRI = "lahiri"
-    RAMAN = "raman"
-    KRISHNAMURTI = "krishnamurti"
 
 
 class HouseSystem(StrEnum):
-    """House-division convention."""
+    """House-division convention.
+
+    Matches the server's ``Literal["placidus","whole_sign","equal"]``.
+    """
 
     PLACIDUS = "placidus"
     WHOLE_SIGN = "whole_sign"
     EQUAL = "equal"
-    KOCH = "koch"
 
 
 class UsageGroupBy(StrEnum):

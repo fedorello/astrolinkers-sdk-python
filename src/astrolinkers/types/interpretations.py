@@ -30,7 +30,10 @@ class LLMInterpretation(BaseModel):
 
     model_config = ConfigDict(extra="allow")
 
-    interpretation_type: InterpretationType
+    # Widened to ``InterpretationType | str`` so future server-side
+    # variants do not raise ``ValidationError`` on parse — callers
+    # can still narrow against the enum's known values.
+    interpretation_type: InterpretationType | str
     language: Language
     tier: InterpretationTier
     content: str
