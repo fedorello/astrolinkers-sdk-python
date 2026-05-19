@@ -14,14 +14,18 @@ def _build_payload(
     moment: datetime,
     latitude: float,
     longitude: float,
-    system: AstrologySystem,
-    house_system: HouseSystem,
+    system: AstrologySystem | str,
+    house_system: HouseSystem | str,
     ayanamsha: AyanamshaType | str | None,
 ) -> dict[str, object]:
     """Render the request body the API expects.
 
     Kept as a free function so the async and sync resource classes
-    share one source of truth without inheritance.
+    share one source of truth without inheritance. Each enum-typed
+    field accepts a raw ``str`` too — the server documents the
+    allowed values as ``Literal[...]`` and may add new ones before
+    the SDK does, so the call site should not be forced to upgrade
+    in lockstep.
     """
     birth: dict[str, object] = {
         "moment": moment.isoformat(),
@@ -31,8 +35,10 @@ def _build_payload(
 
     payload: dict[str, object] = {
         "birth": birth,
-        "system": system.value,
-        "house_system": house_system.value,
+        "system": system.value if isinstance(system, AstrologySystem) else system,
+        "house_system": (
+            house_system.value if isinstance(house_system, HouseSystem) else house_system
+        ),
     }
     if ayanamsha is not None:
         payload["ayanamsha"] = (
@@ -53,8 +59,8 @@ class AsyncCharts:
         moment: datetime,
         latitude: float,
         longitude: float,
-        system: AstrologySystem = AstrologySystem.VEDIC,
-        house_system: HouseSystem = HouseSystem.PLACIDUS,
+        system: AstrologySystem | str = AstrologySystem.VEDIC,
+        house_system: HouseSystem | str = HouseSystem.PLACIDUS,
         ayanamsha: AyanamshaType | str | None = AyanamshaType.LAHIRI,
     ) -> Chart:
         """Compute and persist a new natal chart.
@@ -99,8 +105,8 @@ class SyncCharts:
         moment: datetime,
         latitude: float,
         longitude: float,
-        system: AstrologySystem = AstrologySystem.VEDIC,
-        house_system: HouseSystem = HouseSystem.PLACIDUS,
+        system: AstrologySystem | str = AstrologySystem.VEDIC,
+        house_system: HouseSystem | str = HouseSystem.PLACIDUS,
         ayanamsha: AyanamshaType | str | None = AyanamshaType.LAHIRI,
     ) -> Chart:
         """Compute and persist a new natal chart. See :meth:`AsyncCharts.create`."""

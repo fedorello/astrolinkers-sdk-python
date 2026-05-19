@@ -7,4 +7,4 @@ logs can correlate failures with a specific client version.
 from __future__ import annotations
 
 # Keep in sync with ``pyproject.toml``. When releasing, bump both.
-__version__ = "0.2.1"
+__version__ = "0.2.2"

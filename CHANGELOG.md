@@ -4,6 +4,27 @@ All notable changes to this SDK are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project
 adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.2.2] — 2026-05-19
+
+### Fixed
+
+- **`charts.create()` widened to accept raw strings for the `system`
+  and `house_system` arguments**, mirroring the existing `ayanamsha`
+  signature. Passing e.g. `system="vedic"` raised
+  `AttributeError: 'str' object has no attribute 'value'` in 0.2.1;
+  it now produces the same payload as `system=AstrologySystem.VEDIC`.
+  This is the same pattern used for `ayanamsha`: the server may add
+  new `Literal[...]` values before the SDK ships the enum constant,
+  so callers should not be forced to upgrade in lockstep.
+
+### Added
+
+- **`tests/e2e/test_smoke.py`** — opt-in end-to-end suite (87 tests,
+  ~73 s) that exercises every public endpoint (92 routes, all 12
+  resources, sync + async transports, all 58 Vedic endpoints,
+  streaming + persistence). Skips cleanly without
+  `ASTROLINKERS_E2E_TOKEN`. Run via `make e2e`.
+
 ## [0.2.1] — 2026-05-19
 
 Schema-alignment release. Every typed response now matches the
