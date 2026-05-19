@@ -11,7 +11,7 @@ interpretations.
   on transient failures.
 * **Multilingual** — English plus 8 Indian languages + Spanish out of the box.
 
-> Status: alpha (`0.2.0`). Public API may shift between minor releases until
+> Status: alpha (`0.2.2`). Public API may shift between minor releases until
 > `1.0`. Pin the minor version when integrating.
 
 ## Resource map
