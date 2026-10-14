@@ -341,7 +341,7 @@ def requires_llm_plan(llm_in_plan: bool) -> None:
 def _llm_calls(client: Astrolinkers, chart_id: str) -> dict[str, Callable[[], object]]:
     """Every LLM-generating SDK call, keyed by name; streams are drained."""
     tier = InterpretationTier.STANDARD
-    window = {"window_start": NOW, "window_end": NOW + timedelta(hours=6)}
+    end = NOW + timedelta(hours=6)
     return {
         "chart_reading": lambda: client.llm.chart_reading(
             chart_id=chart_id, language=Language.EN, tier=tier
@@ -353,7 +353,7 @@ def _llm_calls(client: Astrolinkers, chart_id: str) -> dict[str, Callable[[], ob
             chart_id=chart_id, at=NOW, language=Language.EN, tier=tier
         ),
         "muhurta_reasoning": lambda: client.llm.muhurta_reasoning(
-            chart_id=chart_id, language=Language.EN, tier=tier, **window
+            chart_id=chart_id, language=Language.EN, tier=tier, window_start=NOW, window_end=end
         ),
         "chart_reading_stream": lambda: list(
             client.llm.chart_reading_stream(chart_id=chart_id, tier=tier)
@@ -365,7 +365,9 @@ def _llm_calls(client: Astrolinkers, chart_id: str) -> dict[str, Callable[[], ob
             client.llm.dasha_forecast_stream(chart_id=chart_id, at=NOW, tier=tier)
         ),
         "muhurta_reasoning_stream": lambda: list(
-            client.llm.muhurta_reasoning_stream(chart_id=chart_id, tier=tier, **window)
+            client.llm.muhurta_reasoning_stream(
+                chart_id=chart_id, tier=tier, window_start=NOW, window_end=end
+            )
         ),
     }
 
