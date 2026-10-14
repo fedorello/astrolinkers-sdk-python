@@ -31,6 +31,7 @@ from astrolinkers._errors import (
     InvalidRequestError,
     NotFoundError,
     PermissionDeniedError,
+    PlanFeatureUnavailableError,
     RateLimitedError,
     ServerError,
     TimeoutError,
@@ -132,8 +133,9 @@ def _parse_error_envelope(response: httpx.Response) -> APIError:
         "request_id": request_id,
     }
 
-    if code in _BUDGET_ERROR_CODES:
-        return BudgetExceededError(**common)
+    by_code = _CODE_TO_EXCEPTION.get(code) if code else None
+    if by_code is not None:
+        return by_code(**common)
     cls = _STATUS_TO_EXCEPTION.get(status)
     if cls is RateLimitedError:
         retry_after = _extract_retry_after(response, details)
@@ -146,6 +148,15 @@ def _parse_error_envelope(response: httpx.Response) -> APIError:
         return ServerError(**common)
     return APIError(**common)
 
+
+# The server's code for "this plan has no LLM access" (403).
+_PLAN_FEATURE_UNAVAILABLE = "plan_feature_unavailable"
+
+# Error codes that pick a more specific exception than their HTTP status would.
+_CODE_TO_EXCEPTION: dict[str, type[APIError]] = {
+    **dict.fromkeys(_BUDGET_ERROR_CODES, BudgetExceededError),
+    _PLAN_FEATURE_UNAVAILABLE: PlanFeatureUnavailableError,
+}
 
 # Direct HTTP-status → exception mapping. Keep the table at module
 # scope so it's built once.

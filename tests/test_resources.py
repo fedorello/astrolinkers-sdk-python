@@ -500,11 +500,11 @@ def test_vedic_bhava_chakra_serialises_style(
     assert "style=equal" in str(route.calls.last.request.url)
 
 
-def test_vedic_panchanga_carries_at_lat_lon(
+def test_vedic_panchanga_calls_the_moment_route_with_api_param_names(
     sync_client: Astrolinkers,
     respx_mock: respx.MockRouter,
 ) -> None:
-    route = respx_mock.get("/v1/vedic/panchanga").mock(
+    route = respx_mock.get("/v1/vedic/panchanga/current").mock(
         return_value=httpx.Response(200, json={"tithi": "Purnima"}),
     )
     sync_client.vedic.panchanga(
@@ -514,8 +514,8 @@ def test_vedic_panchanga_carries_at_lat_lon(
     )
     url = str(route.calls.last.request.url)
     assert "at=2026-05-18" in url
-    assert "lat=28.6139" in url
-    assert "lon=77.209" in url
+    assert "latitude=28.6139" in url
+    assert "longitude=77.209" in url
 
 
 def test_vedic_current_dasha_at(

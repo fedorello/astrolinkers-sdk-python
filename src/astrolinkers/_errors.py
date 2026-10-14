@@ -8,6 +8,7 @@ on a specific failure mode without parsing strings:
   error envelope; subclasses below pick the right HTTP status range.
 * :class:`AuthenticationError`      — 401.
 * :class:`PermissionDeniedError`    — 403.
+* :class:`PlanFeatureUnavailableError` — 403 ``plan_feature_unavailable`` (LLM not in plan).
 * :class:`NotFoundError`            — 404.
 * :class:`InvalidRequestError`      — 422 / other 4xx without a more
   specific subclass.
@@ -69,6 +70,14 @@ class AuthenticationError(APIError):
 
 class PermissionDeniedError(APIError):
     """HTTP 403 — token lacks the required scope."""
+
+
+class PlanFeatureUnavailableError(PermissionDeniedError):
+    """HTTP 403 ``plan_feature_unavailable`` — the endpoint uses an LLM and the plan has none.
+
+    Raised on the Free plan by every LLM-backed endpoint, before any model is
+    called. ``details["plan"]`` names the plan.
+    """
 
 
 class NotFoundError(APIError):

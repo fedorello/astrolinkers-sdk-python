@@ -64,8 +64,7 @@ _TOKEN_AVAILABLE = bool(os.environ.get("ASTROLINKERS_E2E_TOKEN")) or _FOUNDER_PA
 pytestmark = pytest.mark.skipif(
     not _TOKEN_AVAILABLE,
     reason=(
-        "e2e smoke requires ASTROLINKERS_E2E_TOKEN env var or "
-        "~/.astrolinkers/token_founder.jwt"
+        "e2e smoke requires ASTROLINKERS_E2E_TOKEN env var or ~/.astrolinkers/token_founder.jwt"
     ),
 )
 
@@ -627,34 +626,39 @@ def test_vedic_sambandhas(sync_client: Astrolinkers, chart_a: Chart) -> None:
 
 
 def test_vedic_sambandhas_for_planet(
-    sync_client: Astrolinkers, chart_a: Chart,
+    sync_client: Astrolinkers,
+    chart_a: Chart,
 ) -> None:
     assert isinstance(sync_client.vedic.sambandhas_for_planet(chart_a.id, "sun"), dict)
 
 
 def test_vedic_extended_sambandhas(
-    sync_client: Astrolinkers, chart_a: Chart,
+    sync_client: Astrolinkers,
+    chart_a: Chart,
 ) -> None:
     out = sync_client.vedic.extended_sambandhas(chart_a.id, p1="sun", p2="moon")
     assert isinstance(out, dict)
 
 
 def test_vedic_extended_sambandhas_for_planet(
-    sync_client: Astrolinkers, chart_a: Chart,
+    sync_client: Astrolinkers,
+    chart_a: Chart,
 ) -> None:
     out = sync_client.vedic.extended_sambandhas_for_planet(chart_a.id, "sun")
     assert isinstance(out, dict)
 
 
 def test_vedic_house_relations_for_planet(
-    sync_client: Astrolinkers, chart_a: Chart,
+    sync_client: Astrolinkers,
+    chart_a: Chart,
 ) -> None:
     out = sync_client.vedic.house_relations_for_planet(chart_a.id, "sun")
     assert isinstance(out, dict)
 
 
 def test_vedic_house_relations_for_house(
-    sync_client: Astrolinkers, chart_a: Chart,
+    sync_client: Astrolinkers,
+    chart_a: Chart,
 ) -> None:
     out = sync_client.vedic.house_relations_for_house(chart_a.id, 1)
     assert isinstance(out, dict)
@@ -690,7 +694,8 @@ def test_vedic_theo_house_roles(sync_client: Astrolinkers, chart_a: Chart) -> No
 
 
 def test_vedic_theo_sign_influences(
-    sync_client: Astrolinkers, chart_a: Chart,
+    sync_client: Astrolinkers,
+    chart_a: Chart,
 ) -> None:
     assert isinstance(sync_client.vedic.theo_sign_influences(chart_a.id), dict)
 
@@ -711,7 +716,9 @@ def test_vedic_materialization(sync_client: Astrolinkers, chart_a: Chart) -> Non
 
 def test_vedic_materialization_at(sync_client: Astrolinkers, chart_a: Chart) -> None:
     out = sync_client.vedic.materialization_at(
-        chart_a.id, TheoArea.CAREER, at=NOW,
+        chart_a.id,
+        TheoArea.CAREER,
+        at=NOW,
     )
     assert isinstance(out, dict)
 
@@ -734,7 +741,8 @@ def test_vedic_transit_contacts(sync_client: Astrolinkers, chart_a: Chart) -> No
 
 
 def test_vedic_transit_navamsa_activations(
-    sync_client: Astrolinkers, chart_a: Chart,
+    sync_client: Astrolinkers,
+    chart_a: Chart,
 ) -> None:
     out = sync_client.vedic.transit_navamsa_activations(chart_a.id, at=NOW)
     assert isinstance(out, dict)
@@ -742,7 +750,9 @@ def test_vedic_transit_navamsa_activations(
 
 def test_vedic_probability(sync_client: Astrolinkers, chart_a: Chart) -> None:
     out = sync_client.vedic.probability(
-        chart_a.id, HouseSignificator.CAREER, at=NOW,
+        chart_a.id,
+        HouseSignificator.CAREER,
+        at=NOW,
     )
     assert isinstance(out, dict)
 

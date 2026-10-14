@@ -291,12 +291,16 @@ class AsyncVedic:
         lat: float,
         lon: float,
     ) -> dict[str, Any]:
-        """Full panchanga (5 angas + muhurtas + kalams) for a moment + place."""
+        """Full panchanga (5 angas + muhurtas + kalams) for a moment + place.
+
+        Calls ``GET /v1/vedic/panchanga/current`` — the moment-based route. (The
+        day-based ``/v1/vedic/panchanga`` takes a civil day and a timezone.)
+        """
         return _ensure_dict(
             await self._transport.request(
                 "GET",
-                "/v1/vedic/panchanga",
-                params={"at": at.isoformat(), "lat": lat, "lon": lon},
+                "/v1/vedic/panchanga/current",
+                params={"at": at.isoformat(), "latitude": lat, "longitude": lon},
             )
         )
 
@@ -1010,12 +1014,12 @@ class SyncVedic:
         lat: float,
         lon: float,
     ) -> dict[str, Any]:
-        """Full panchanga for a moment + place."""
+        """Full panchanga for a moment + place. See :meth:`AsyncVedic.panchanga`."""
         return _ensure_dict(
             self._transport.request(
                 "GET",
-                "/v1/vedic/panchanga",
-                params={"at": at.isoformat(), "lat": lat, "lon": lon},
+                "/v1/vedic/panchanga/current",
+                params={"at": at.isoformat(), "latitude": lat, "longitude": lon},
             )
         )
 

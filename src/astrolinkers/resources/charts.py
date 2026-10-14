@@ -1,4 +1,4 @@
-"""Charts resource — ``POST /v1/charts`` and ``GET /v1/charts/{id}``."""
+"""Charts resource — ``POST /v1/charts``, ``GET`` and ``DELETE /v1/charts/{id}``."""
 
 from __future__ import annotations
 
@@ -92,6 +92,13 @@ class AsyncCharts:
         data = await self._transport.request("GET", f"/v1/charts/{chart_id}")
         return Chart.model_validate(data)
 
+    async def delete(self, chart_id: str) -> None:
+        """Delete a chart and everything derived from it (``DELETE /v1/charts/{id}``).
+
+        Raises :class:`NotFoundError` when the chart is not in your account.
+        """
+        await self._transport.request("DELETE", f"/v1/charts/{chart_id}")
+
 
 class SyncCharts:
     """Sync mirror of :class:`AsyncCharts`."""
@@ -125,3 +132,7 @@ class SyncCharts:
         """Fetch a previously-created chart by id."""
         data = self._transport.request("GET", f"/v1/charts/{chart_id}")
         return Chart.model_validate(data)
+
+    def delete(self, chart_id: str) -> None:
+        """Delete a chart and everything derived from it. See :meth:`AsyncCharts.delete`."""
+        self._transport.request("DELETE", f"/v1/charts/{chart_id}")

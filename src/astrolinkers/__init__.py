@@ -26,6 +26,7 @@ from astrolinkers._errors import (
     InvalidRequestError,
     NotFoundError,
     PermissionDeniedError,
+    PlanFeatureUnavailableError,
     RateLimitedError,
     ServerError,
     TimeoutError,
@@ -60,6 +61,7 @@ from astrolinkers.types.compatibility import (
     CompatibilityAxis,
     CompatibilityReport,
 )
+from astrolinkers.types.data import ErasureReport
 from astrolinkers.types.feedback import (
     FeedbackEntry,
     FeedbackRole,
@@ -97,6 +99,7 @@ __all__ = [
     "InvalidRequestError",
     "NotFoundError",
     "PermissionDeniedError",
+    "PlanFeatureUnavailableError",
     "RateLimitedError",
     "ServerError",
     "TimeoutError",
@@ -108,6 +111,7 @@ __all__ = [
     "AyanamshaType",
     "BirthData",
     "Chart",
+    "ErasureReport",
     "HouseCusp",
     "HouseSystem",
     "PlanetPosition",

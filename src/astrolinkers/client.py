@@ -42,6 +42,7 @@ from astrolinkers.resources.compatibility import (
     AsyncCompatibility,
     SyncCompatibility,
 )
+from astrolinkers.resources.data import AsyncData, SyncData
 from astrolinkers.resources.feedback import AsyncFeedback, SyncFeedback
 from astrolinkers.resources.health import AsyncHealth, SyncHealth
 from astrolinkers.resources.interpretations import (
@@ -99,6 +100,7 @@ class AsyncAstrolinkers:
         self.api_keys = AsyncApiKeys(self._transport)
         self.charts = AsyncCharts(self._transport)
         self.compatibility = AsyncCompatibility(self._transport)
+        self.data = AsyncData(self._transport)
         self.feedback = AsyncFeedback(self._transport)
         self.health = AsyncHealth(self._transport)
         self.interpretations = AsyncInterpretations(self._transport)
@@ -202,6 +204,7 @@ class Astrolinkers:
         self.api_keys = SyncApiKeys(self._transport)
         self.charts = SyncCharts(self._transport)
         self.compatibility = SyncCompatibility(self._transport)
+        self.data = SyncData(self._transport)
         self.feedback = SyncFeedback(self._transport)
         self.health = SyncHealth(self._transport)
         self.interpretations = SyncInterpretations(self._transport)

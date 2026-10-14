@@ -4,6 +4,24 @@ All notable changes to this SDK are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project
 adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.3.0] — 2026-10-14
+
+### Added
+
+- `charts.delete(chart_id)` — `DELETE /v1/charts/{id}`: the chart and everything derived
+  from it.
+- `data.erase_all()` — `DELETE /v1/tenant/data`: every chart of the account and everything
+  derived from them. Returns an `ErasureReport`.
+- `PlanFeatureUnavailableError` (a `PermissionDeniedError`) for `403
+  plan_feature_unavailable`: the endpoint uses an LLM and the plan has none (Free).
+
+### Fixed
+
+- `vedic.panchanga(at=..., lat=..., lon=...)` called `/v1/vedic/panchanga` with parameter
+  names the API does not accept and always failed with `422`. It now calls the
+  moment-based `/v1/vedic/panchanga/current` with `latitude` / `longitude`. The method's
+  signature is unchanged.
+
 ## [0.2.2] — 2026-05-19
 
 ### Fixed
