@@ -39,6 +39,7 @@ from astrolinkers import (
     LLMInterpretation,
     MetaEvent,
     Plan,
+    PlanFeatureUnavailableError,
     Report,
     SkillProfile,
     Statement,
@@ -262,6 +263,7 @@ def test_reports_create_and_retrieve(
 # ----------------------------------------------------------------------------
 
 
+@pytest.mark.usefixtures("requires_llm_plan")
 def test_llm_chart_reading_sync(
     sync_client: Astrolinkers,
     chart_a: Chart,
@@ -277,6 +279,7 @@ def test_llm_chart_reading_sync(
     assert reading.tier == InterpretationTier.STANDARD
 
 
+@pytest.mark.usefixtures("requires_llm_plan")
 def test_llm_theme_sync(sync_client: Astrolinkers, chart_a: Chart) -> None:
     """Theme interpretation for ``career``."""
     out = sync_client.llm.theme(
@@ -288,6 +291,7 @@ def test_llm_theme_sync(sync_client: Astrolinkers, chart_a: Chart) -> None:
     assert out.content
 
 
+@pytest.mark.usefixtures("requires_llm_plan")
 def test_llm_dasha_forecast_sync(
     sync_client: Astrolinkers,
     chart_a: Chart,
@@ -302,6 +306,7 @@ def test_llm_dasha_forecast_sync(
     assert out.content
 
 
+@pytest.mark.usefixtures("requires_llm_plan")
 def test_llm_muhurta_reasoning_sync(
     sync_client: Astrolinkers,
     chart_a: Chart,
@@ -317,6 +322,79 @@ def test_llm_muhurta_reasoning_sync(
         top_n=3,
     )
     assert out.content
+
+
+@pytest.fixture(scope="module")
+def llm_in_plan(sync_client: Astrolinkers) -> bool:
+    """Whether the test key's plan includes LLM features (a Free plan does not)."""
+    cap = sync_client.plans.get_tenant_plan().plan.llm_cost_cap_per_hour_usd
+    return cap is not None and cap > 0
+
+
+@pytest.fixture
+def requires_llm_plan(llm_in_plan: bool) -> None:
+    """Skip a test that generates LLM text when the plan has no LLM access."""
+    if not llm_in_plan:
+        pytest.skip("the test key's plan has no LLM access; see the refusal test")
+
+
+def _llm_calls(client: Astrolinkers, chart_id: str) -> dict[str, Callable[[], object]]:
+    """Every LLM-generating SDK call, keyed by name; streams are drained."""
+    tier = InterpretationTier.STANDARD
+    window = {"window_start": NOW, "window_end": NOW + timedelta(hours=6)}
+    return {
+        "chart_reading": lambda: client.llm.chart_reading(
+            chart_id=chart_id, language=Language.EN, tier=tier
+        ),
+        "theme": lambda: client.llm.theme(
+            chart_id=chart_id, theme="career", language=Language.EN, tier=tier
+        ),
+        "dasha_forecast": lambda: client.llm.dasha_forecast(
+            chart_id=chart_id, at=NOW, language=Language.EN, tier=tier
+        ),
+        "muhurta_reasoning": lambda: client.llm.muhurta_reasoning(
+            chart_id=chart_id, language=Language.EN, tier=tier, **window
+        ),
+        "chart_reading_stream": lambda: list(
+            client.llm.chart_reading_stream(chart_id=chart_id, tier=tier)
+        ),
+        "theme_stream": lambda: list(
+            client.llm.theme_stream(chart_id=chart_id, theme="career", tier=tier)
+        ),
+        "dasha_forecast_stream": lambda: list(
+            client.llm.dasha_forecast_stream(chart_id=chart_id, at=NOW, tier=tier)
+        ),
+        "muhurta_reasoning_stream": lambda: list(
+            client.llm.muhurta_reasoning_stream(chart_id=chart_id, tier=tier, **window)
+        ),
+    }
+
+
+@pytest.mark.parametrize(
+    "call",
+    [
+        "chart_reading",
+        "theme",
+        "dasha_forecast",
+        "muhurta_reasoning",
+        "chart_reading_stream",
+        "theme_stream",
+        "dasha_forecast_stream",
+        "muhurta_reasoning_stream",
+    ],
+)
+def test_llm_is_refused_with_a_typed_error_on_a_plan_without_it(
+    sync_client: Astrolinkers,
+    chart_a: Chart,
+    llm_in_plan: bool,
+    call: str,
+) -> None:
+    """A plan without LLM access gets ``PlanFeatureUnavailableError`` — streams included."""
+    if llm_in_plan:
+        pytest.skip("the test key's plan includes LLM access")
+    with pytest.raises(PlanFeatureUnavailableError) as refused:
+        _llm_calls(sync_client, chart_a.id)[call]()
+    assert refused.value.status_code == 403
 
 
 def _drain_sync_stream(
@@ -343,6 +421,7 @@ def _drain_sync_stream(
     return metas, dones, errors
 
 
+@pytest.mark.usefixtures("requires_llm_plan")
 def test_llm_chart_reading_stream(
     sync_client: Astrolinkers,
     chart_a: Chart,
@@ -358,6 +437,7 @@ def test_llm_chart_reading_stream(
     assert dones or errors, "stream should terminate with done or error"
 
 
+@pytest.mark.usefixtures("requires_llm_plan")
 def test_llm_theme_stream(sync_client: Astrolinkers, chart_a: Chart) -> None:
     """Theme stream terminates with at least one meta + terminal event."""
     metas, dones, errors = _drain_sync_stream(
@@ -371,6 +451,7 @@ def test_llm_theme_stream(sync_client: Astrolinkers, chart_a: Chart) -> None:
     assert dones or errors
 
 
+@pytest.mark.usefixtures("requires_llm_plan")
 def test_llm_dasha_forecast_stream(
     sync_client: Astrolinkers,
     chart_a: Chart,
@@ -387,6 +468,7 @@ def test_llm_dasha_forecast_stream(
     assert dones or errors
 
 
+@pytest.mark.usefixtures("requires_llm_plan")
 def test_llm_muhurta_reasoning_stream(
     sync_client: Astrolinkers,
     chart_a: Chart,
@@ -817,6 +899,7 @@ async def test_async_profiles_talent(
     assert profile.chart_id == chart_a.id
 
 
+@pytest.mark.usefixtures("requires_llm_plan")
 @pytest.mark.asyncio(loop_scope="session")
 async def test_async_llm_chart_reading(
     async_client: AsyncAstrolinkers,
